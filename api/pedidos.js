@@ -1,10 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -12,6 +7,15 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({ error: 'Variáveis de ambiente do Supabase não configuradas.' });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const { nome, cpf, itens, total } = req.body;
 
@@ -22,15 +26,7 @@ module.exports = async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from('pedidos')
-      .insert([
-        {
-          nome_cliente: nome,
-          cpf_cliente: cpf,
-          itens: itens,
-          total: total,
-          status: 'confirmado',
-        },
-      ])
+      .insert([{ nome_cliente: nome, cpf_cliente: cpf, itens, total, status: 'confirmado' }])
       .select()
       .single();
 
@@ -39,6 +35,6 @@ module.exports = async function handler(req, res) {
     return res.status(201).json({ pedido: data, mensagem: 'Pedido realizado com sucesso!' });
   } catch (err) {
     console.error('Erro ao salvar pedido:', err);
-    return res.status(500).json({ error: 'Erro interno ao salvar pedido' });
+    return res.status(500).json({ error: err.message || 'Erro interno ao salvar pedido' });
   }
 };
