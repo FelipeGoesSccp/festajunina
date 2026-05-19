@@ -1,0 +1,12 @@
+{
+    "name": "festajunina",
+    "version": "1.0.0",
+    "description": "Festa Junina de Brasileirinhos — cardápio online",
+    "private": true,
+    "dependencies": {
+        "@supabase/supabase-js": "^2.45.4"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}
