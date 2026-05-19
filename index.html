@@ -36,10 +36,42 @@
             transition: transform 0.1s;
         }
         .btn-junino:active { transform: scale(0.95); border-bottom-width: 2px; }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .cart-badge {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 9999px;
+            padding: 0.8rem 1.4rem;
+            font-weight: 800;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-bottom: 4px solid rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            z-index: 50;
+        }
+        .cart-badge:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
+    <!-- HOME -->
     <div id="screen-home" class="max-w-md mx-auto p-6 flex flex-col items-center">
         <div class="w-full flex justify-around mb-10 text-2xl opacity-80">🚩 🏁 🚩 🏁</div>
         <h1 class="font-festiva text-white text-4xl text-center mb-1 drop-shadow-md">Festa Junina</h1>
@@ -53,161 +85,296 @@
         </div>
     </div>
 
+    <!-- PRODUTOS -->
     <div id="screen-products" class="hidden max-w-md mx-auto p-4">
         <div class="flex items-center mb-8 pt-5 px-2">
             <button onclick="showScreen('home')" class="text-white text-3xl">↩</button>
             <h2 id="category-title" class="font-festiva text-white text-3xl text-center flex-1 pr-8">Produtos</h2>
         </div>
-        <div id="products-grid" class="space-y-6 px-2"></div>
+        <div id="products-grid" class="space-y-6 px-2 pb-28"></div>
     </div>
 
+    <!-- CARRINHO -->
+    <div id="screen-cart" class="hidden max-w-md mx-auto p-6">
+        <button onclick="goBackFromCart()" class="text-white text-3xl mb-8">↩</button>
+        <h2 class="font-festiva text-white text-4xl text-center mb-8">🛒 Carrinho</h2>
+        <div id="cart-items" class="space-y-3 mb-6 px-2"></div>
+        <div class="bg-[#d9a441] rounded-[20px] p-4 flex justify-between items-center text-white mb-6">
+            <span class="font-bold text-sm uppercase">Total</span>
+            <span id="cart-total" class="font-black text-xl">R$ 0,00</span>
+        </div>
+        <button onclick="showScreen('checkout')" class="btn-junino" style="background-color: #22c55e;">Finalizar Pedido</button>
+    </div>
+
+    <!-- CHECKOUT -->
     <div id="screen-checkout" class="hidden max-w-md mx-auto p-6">
-        <button onclick="showScreen('home')" class="text-white text-3xl mb-8">↩</button>
+        <button onclick="showScreen('cart')" class="text-white text-3xl mb-8">↩</button>
         <h2 class="font-festiva text-white text-4xl text-center mb-10">PAGAMENTO</h2>
         <div class="space-y-5">
             <div>
                 <label class="text-[10px] font-bold uppercase ml-4">Nome Completo</label>
-                <input type="text" class="input-pill" placeholder="Robertinho Costa">
+                <input id="input-nome" type="text" class="input-pill" placeholder="Robertinho Costa">
             </div>
             <div>
                 <label class="text-[10px] font-bold uppercase ml-4">CPF</label>
-                <input type="text" class="input-pill" placeholder="000.000.000-00">
+                <input id="input-cpf" type="text" class="input-pill" placeholder="000.000.000-00" maxlength="14">
             </div>
             <div>
                 <label class="text-[10px] font-bold uppercase ml-4">Número do Cartão</label>
-                <input type="text" class="input-pill" placeholder="0000 0000 0000 0000">
+                <input type="text" class="input-pill" placeholder="0000 0000 0000 0000" maxlength="19">
             </div>
             <div class="bg-[#d9a441] rounded-[20px] p-4 flex justify-between items-center text-white mt-10">
                 <span class="font-bold text-xs uppercase">Forma de Pagamento</span>
                 <span class="font-bold">Crédito ▼</span>
             </div>
-            <button onclick="showScreen('success')" class="w-full border-2 border-white text-white font-black py-4 rounded-full mt-10 uppercase tracking-widest">Fechar Pedido</button>
+            <div id="checkout-error" class="hidden text-red-900 bg-red-200 rounded-2xl px-4 py-3 text-sm font-bold text-center"></div>
+            <button id="btn-fechar-pedido" onclick="submitOrder()" class="w-full border-2 border-white text-white font-black py-4 rounded-full mt-10 uppercase tracking-widest">Fechar Pedido</button>
         </div>
     </div>
 
+    <!-- SUCESSO -->
     <div id="screen-success" class="hidden max-w-md mx-auto p-6 text-center pt-24 text-white">
         <div class="w-full flex justify-around mb-10 text-2xl opacity-80">🚩 🏁 🚩 🏁</div>
         <h2 class="font-festiva text-4xl mb-6">Compra efetuada!</h2>
         <p class="text-lg mb-20 px-10">Muito obrigado pela sua preferência e compra!</p>
         <p class="font-festiva text-2xl mb-20 uppercase">Volte sempre</p>
-        <button onclick="showScreen('home')" class="bg-white text-[#eeb44f] font-black px-12 py-4 rounded-full shadow-xl">NOVO PEDIDO</button>
+        <button onclick="resetAndGoHome()" class="bg-white text-[#eeb44f] font-black px-12 py-4 rounded-full shadow-xl">NOVO PEDIDO</button>
+    </div>
+
+    <!-- Botão flutuante do carrinho -->
+    <div id="cart-float" class="hidden cart-badge" onclick="goToCart()">
+        🛒 <span id="cart-count">0</span> item(s) — <span id="cart-float-total">R$ 0,00</span>
     </div>
 
     <script>
-        const fakeProducts = {
-            'Comida': [
-                {
-                    nome: 'Baião de Dois',
-                    preco: '25,00',
-                    img: 'https://www.yoki.com.br/_next/image?url=https%3A%2F%2Fprodcontent.yoki.com.br%2Fwp-content%2Fuploads%2F2024%2F09%2FBaiao-de-dois-800x450-1.jpg&w=1400&q=75'
-                },
-                {
-                    nome: 'Feijão Tropeiro',
-                    preco: '22,00',
-                    img: 'https://www.yoki.com.br/_next/image?url=https%3A%2F%2Fprodcontent.yoki.com.br%2Fwp-content%2Fuploads%2F2024%2F09%2FFeijao-Troperio-6016x4016-1.jpg&w=1400&q=75'
-                },
-                {
-                    nome: 'Cuscuz com Carne',
-                    preco: '20,00',
-                    img: 'https://www.estadao.com.br/resizer/v2/ZW5XVDRQNBH35BFJTAVACELG6E.jpg?quality=80&auth=0ecc62a2f1e5ece417cd460fffb0bc880f8802a7ae69c16df5e578c9f81440bd&width=1200&height=1200&smart=true'
-                },
-                {
-                    nome: 'Pamonha',
-                    preco: '8,00',
-                    img: 'https://p2.trrsf.com/image/fget/cf/1200/900/middle/images.terra.com/2023/05/22/pamonha-r1ak8eh2lcfr.jpg'
-                }
-            ],
-            'Bebidas': [
-                {
-                    nome: 'Quentão',
-                    preco: '10,00',
-                    img: 'https://www.sabornamesa.com.br/media/k2/items/cache/242a68bb1034576b0ba92e3912e97f74_XL.jpg'
-                },
-                {
-                    nome: 'Vinho Quente',
-                    preco: '12,00',
-                    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQG84js6UifZQb9PFiFstjobWJq3mTrXpNsnw&s'
-                },
-                {
-                    nome: 'Suco de Caju',
-                    preco: '8,00',
-                    img: 'https://s2-receitas.glbimg.com/tOEYBMHRhCcCQa8yIz1zwysDe4A=/0x0:1024x770/984x0/smart/filters:strip_icc()/g.glbimg.com/og/gs/gsat5/f/thumbs/materia/2015/12/18/Suco_de_jabuticaba.jpg'
-                },
-                {
-                    nome: 'Água de Coco',
-                    preco: '7,00',
-                    img: 'https://static.itdg.com.br/images/640-400/93534a5ec8c2e3443013bdfb1ae3357d/bebida-de-coco-para-festa-junina.jpg'
-                }
-            ],
-            'Promoções': [
-                {
-                    nome: 'Combo Casal',
-                    preco: '40,00',
-                    img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=75'
-                },
-                {
-                    nome: 'Kit Família',
-                    preco: '75,00',
-                    img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=75'
-                },
-                {
-                    nome: 'Combo Bebidas (4 un)',
-                    preco: '30,00',
-                    img: 'https://cdn.pixabay.com/photo/2018/03/31/06/31/beverages-3279609_1280.jpg'
-                },
-                {
-                    nome: 'Lanche + Bebida',
-                    preco: '18,00',
-                    img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=75'
-                }
-            ],
-            'Especial': [
-                {
-                    nome: 'Arroz Doce',
-                    preco: '15,00',
-                    img: 'https://www.temperando.com/wp-content/uploads/2019/02/ARROZ-DOCE-IMDEST-700x400.jpg'
-                },
-                {
-                    nome: 'Canjica',
-                    preco: '12,00',
-                    img: 'https://www.estadao.com.br/resizer/v2/F6SPAHPFZRE3RAWE6YC3DUBUTQ.jpg?quality=80&auth=8272b34be35e0bfe68ccbf77d917f1f2aa34b61d917a651c737266d10303c5d9&width=720&height=410&smart=true'
-                },
-                {
-                    nome: 'Bolo de Milho',
-                    preco: '10,00',
-                    img: 'https://static.itdg.com.br/images/1200-675/b06076b556e4dd56ad1c92389f51d894/bolo-de-milho-festa-junina.jpg'
-                },
-                {
-                    nome: 'Pé de Moleque',
-                    preco: '6,00',
-                    img: 'https://anamariabrogui.com.br/assets/uploads/receitas/fotos/usuario-2741-10361d567e8a795aaf8c0d7364d976d0.jpg'
-                }
-            ]
-        };
+        // =============================================
+        // Estado global
+        // =============================================
+        let cart = [];
+        let currentCategory = '';
+        let currentColor = '#3b82f6';
 
+        // =============================================
+        // Navegação
+        // =============================================
         function showScreen(id) {
             document.querySelectorAll('[id^="screen-"]').forEach(s => s.classList.add('hidden'));
             document.getElementById('screen-' + id).classList.remove('hidden');
+            updateCartFloat(id);
         }
 
-        function loadProducts(name, color) {
+        function goBackFromCart() {
+            if (currentCategory) {
+                loadProducts(currentCategory, currentColor);
+            } else {
+                showScreen('home');
+            }
+        }
+
+        function goToCart() {
+            renderCart();
+            showScreen('cart');
+        }
+
+        function resetAndGoHome() {
+            cart = [];
+            updateCartFloat('home');
+            showScreen('home');
+        }
+
+        // =============================================
+        // Carrinho
+        // =============================================
+        function addToCart(produto, color) {
+            const existing = cart.find(i => i.id === produto.id);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...produto, qty: 1, color });
+            }
+            updateCartFloat('products');
+
+            // Animação no botão +
+            const btn = document.getElementById('btn-add-' + produto.id);
+            if (btn) {
+                btn.textContent = '✓';
+                btn.style.backgroundColor = '#22c55e';
+                setTimeout(() => {
+                    btn.textContent = '+';
+                    btn.style.backgroundColor = '';
+                }, 800);
+            }
+        }
+
+        function removeFromCart(id) {
+            const idx = cart.findIndex(i => i.id === id);
+            if (idx === -1) return;
+            if (cart[idx].qty > 1) {
+                cart[idx].qty -= 1;
+            } else {
+                cart.splice(idx, 1);
+            }
+            renderCart();
+            updateCartFloat('cart');
+        }
+
+        function cartTotal() {
+            return cart.reduce((acc, i) => acc + i.preco * i.qty, 0);
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            const totalEl = document.getElementById('cart-total');
+
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-white text-center font-bold py-8 opacity-70">Seu carrinho está vazio 😢</p>';
+                totalEl.textContent = 'R$ 0,00';
+                return;
+            }
+
+            container.innerHTML = cart.map(item => `
+                <div class="bg-white rounded-[20px] p-4 flex items-center justify-between shadow">
+                    <div>
+                        <p class="font-bold text-sm uppercase" style="color: ${item.color}">${item.nome}</p>
+                        <p class="text-xs text-gray-500">R$ ${formatPrice(item.preco)} × ${item.qty}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-black" style="color: ${item.color}">R$ ${formatPrice(item.preco * item.qty)}</span>
+                        <button onclick="removeFromCart(${item.id})" class="w-7 h-7 rounded-full bg-red-100 text-red-500 font-black text-sm flex items-center justify-center">−</button>
+                    </div>
+                </div>`).join('');
+
+            totalEl.textContent = 'R$ ' + formatPrice(cartTotal());
+        }
+
+        function updateCartFloat(screen) {
+            const float = document.getElementById('cart-float');
+            const count = document.getElementById('cart-count');
+            const total = document.getElementById('cart-float-total');
+
+            const totalQty = cart.reduce((a, i) => a + i.qty, 0);
+            count.textContent = totalQty;
+            total.textContent = 'R$ ' + formatPrice(cartTotal());
+
+            const show = totalQty > 0 && !['home', 'checkout', 'success', 'cart'].includes(screen);
+            float.classList.toggle('hidden', !show);
+        }
+
+        // =============================================
+        // Produtos — API
+        // =============================================
+        async function loadProducts(name, color) {
+            currentCategory = name;
+            currentColor = color;
             showScreen('products');
             document.getElementById('category-title').innerText = name;
+
             const grid = document.getElementById('products-grid');
-            grid.innerHTML = '';
-            
-            const list = fakeProducts[name] || fakeProducts['Comida'];
-            list.forEach(p => {
-                grid.innerHTML += `
+            grid.innerHTML = '<div class="flex justify-center py-16"><div class="spinner"></div></div>';
+
+            try {
+                const res = await fetch(`/api/produtos?categoria=${encodeURIComponent(name)}`);
+                if (!res.ok) throw new Error('Erro na API');
+                const { produtos } = await res.json();
+
+                if (!produtos || produtos.length === 0) {
+                    grid.innerHTML = '<p class="text-white text-center font-bold py-8 opacity-70">Nenhum produto encontrado.</p>';
+                    return;
+                }
+
+                grid.innerHTML = produtos.map(p => `
                     <div class="bg-white rounded-[25px] overflow-hidden shadow-xl">
-                        <img src="${p.img}" class="w-full h-40 object-cover" onerror="this.src='https://cdn.pixabay.com/photo/2017/06/06/22/46/mediterranean-cuisine-2378758_1280.jpg'">
+                        <img src="${p.img || ''}" class="w-full h-40 object-cover"
+                             onerror="this.src='https://cdn.pixabay.com/photo/2017/06/06/22/46/mediterranean-cuisine-2378758_1280.jpg'">
                         <div class="p-4 flex justify-between items-center text-white" style="background-color: ${color}">
-                            <span class="font-bold uppercase text-xs">${p.nome} — R$ ${p.preco}</span>
-                            <button onclick="showScreen('checkout')" class="bg-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg" style="color: ${color}">+</button>
+                            <span class="font-bold uppercase text-xs">${p.nome} — R$ ${formatPrice(p.preco)}</span>
+                            <button id="btn-add-${p.id}"
+                                onclick='addToCart(${JSON.stringify({id: p.id, nome: p.nome, preco: p.preco, img: p.img})}, "${color}")'
+                                class="bg-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-colors"
+                                style="color: ${color}">+</button>
                         </div>
-                    </div>`;
-            });
+                    </div>`).join('');
+
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = '<p class="text-white text-center font-bold py-8 opacity-70">Erro ao carregar produtos. Tente novamente.</p>';
+            }
         }
+
+        // =============================================
+        // Pedido — API
+        // =============================================
+        async function submitOrder() {
+            const nome = document.getElementById('input-nome').value.trim();
+            const cpf  = document.getElementById('input-cpf').value.trim();
+            const errEl = document.getElementById('checkout-error');
+            const btnEl = document.getElementById('btn-fechar-pedido');
+
+            errEl.classList.add('hidden');
+
+            if (!nome || !cpf) {
+                errEl.textContent = 'Preencha nome e CPF para continuar.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            if (cart.length === 0) {
+                errEl.textContent = 'Seu carrinho está vazio!';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            btnEl.disabled = true;
+            btnEl.textContent = 'Enviando...';
+
+            try {
+                const res = await fetch('/api/pedidos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nome,
+                        cpf,
+                        itens: cart.map(i => ({ id: i.id, nome: i.nome, preco: i.preco, qty: i.qty })),
+                        total: cartTotal()
+                    })
+                });
+
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body.error || 'Erro ao enviar pedido');
+                }
+
+                cart = [];
+                showScreen('success');
+
+            } catch (err) {
+                errEl.textContent = err.message || 'Erro ao fechar pedido. Tente novamente.';
+                errEl.classList.remove('hidden');
+            } finally {
+                btnEl.disabled = false;
+                btnEl.textContent = 'Fechar Pedido';
+            }
+        }
+
+        // =============================================
+        // Helpers
+        // =============================================
+        function formatPrice(val) {
+            return Number(val).toFixed(2).replace('.', ',');
+        }
+
+        // Máscara CPF
+        document.addEventListener('DOMContentLoaded', () => {
+            const cpfInput = document.getElementById('input-cpf');
+            if (cpfInput) {
+                cpfInput.addEventListener('input', e => {
+                    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+                    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+                    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+                    e.target.value = v;
+                });
+            }
+        });
     </script>
 </body>
 </html>
