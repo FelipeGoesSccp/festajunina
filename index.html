@@ -297,7 +297,7 @@
 
             } catch (err) {
                 console.error(err);
-                grid.innerHTML = '<p class="text-white text-center font-bold py-8 opacity-70">Erro ao carregar produtos. Tente novamente.</p>';
+                grid.innerHTML = `<p class="text-white text-center font-bold py-8 opacity-70">Erro: ${err.message}</p>`;
             }
         }
 
