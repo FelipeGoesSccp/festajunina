@@ -274,7 +274,10 @@
 
             try {
                 const res = await fetch(`/api/produtos?categoria=${encodeURIComponent(name)}`);
-                if (!res.ok) throw new Error('Erro na API');
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(`HTTP ${res.status}: ${body.error || res.statusText}`);
+                }
                 const { produtos } = await res.json();
 
                 if (!produtos || produtos.length === 0) {
