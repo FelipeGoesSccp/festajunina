@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const { nome, cpf, itens, total } = req.body;
+  const { nome, cpf, itens, total, forma_pagamento } = req.body;
 
   if (!nome || !cpf || !itens || itens.length === 0) {
     return res.status(400).json({ error: 'Dados do pedido incompletos' });
@@ -26,7 +26,14 @@ module.exports = async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from('pedidos')
-      .insert([{ nome_cliente: nome, cpf_cliente: cpf, itens, total, status: 'confirmado' }])
+      .insert([{
+        nome_cliente: nome,
+        cpf_cliente: cpf,
+        itens,
+        total,
+        forma_pagamento: forma_pagamento || 'credito',
+        status: 'confirmado',
+      }])
       .select()
       .single();
 
