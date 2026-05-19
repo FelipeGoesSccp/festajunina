@@ -1,10 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -12,6 +7,15 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({ error: 'Variáveis de ambiente do Supabase não configuradas.' });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const { categoria } = req.query;
 
@@ -33,6 +37,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ produtos: data });
   } catch (err) {
     console.error('Erro ao buscar produtos:', err);
-    return res.status(500).json({ error: 'Erro interno ao buscar produtos' });
+    return res.status(500).json({ error: err.message || 'Erro interno ao buscar produtos' });
   }
 };
