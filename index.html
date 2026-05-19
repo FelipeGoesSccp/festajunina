@@ -36,6 +36,14 @@
             transition: transform 0.1s;
         }
         .btn-junino:active { transform: scale(0.95); border-bottom-width: 2px; }
+        /* Fogueira */
+        #fire-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
 
         .spinner {
             border: 4px solid rgba(255,255,255,0.3);
@@ -72,6 +80,29 @@
 <body>
 
     <!-- HOME -->
+    
+    <!-- MODAL LGPD CAIPIRA -->
+    <div id="lgpd-modal" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:1rem;">
+        <div style="background:#fff8ec;border-radius:24px;padding:2rem;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+            <div style="font-size:2.5rem;margin-bottom:0.5rem;">🔥🌽🔥</div>
+            <h2 style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#c2410c;margin-bottom:0.8rem;">Lei Caipira de Proteção de Dados</h2>
+            <p style="font-size:0.85rem;color:#4e342e;line-height:1.6;margin-bottom:0.5rem;">
+                <strong>Uai, seus dados tão guardado num baú!</strong> 🪣
+            </p>
+            <p style="font-size:0.8rem;color:#78350f;line-height:1.6;margin-bottom:0.5rem;">
+                Nóis coleta seu nome e CPF só pra saber quem tá comprando a pamonha. Num vai vazar pra ninguém não, viu? Nem pro vizinho bisbilhoteiro!
+            </p>
+            <p style="font-size:0.8rem;color:#78350f;line-height:1.6;margin-bottom:1.2rem;">
+                Seus dados ficam guardadinho no Supabase, mais seguro que roça cercada. Qualquer dúvida, grita no balcão! 🌽
+            </p>
+            <button onclick="aceitarLGPD()" style="width:100%;padding:0.9rem;border-radius:9999px;background:#ef4444;color:white;font-weight:800;font-size:1rem;border:none;border-bottom:4px solid rgba(0,0,0,0.2);cursor:pointer;font-family:'Barlow',sans-serif;">
+                Tô ciente, pode guardar! 🤝
+            </button>
+            <p style="font-size:0.65rem;color:#a8856a;margin-top:0.8rem;">Ao continuar, você concorda com nossa Política de Privacidade Caipira.</p>
+        </div>
+    </div>
+
+    <canvas id="fire-canvas"></canvas>
     <div id="screen-home" class="max-w-md mx-auto p-6 flex flex-col items-center">
         <div class="w-full flex justify-around mb-10 text-2xl opacity-80">🚩 🏁 🚩 🏁</div>
         <h1 class="font-festiva text-white text-4xl text-center mb-1 drop-shadow-md">Festa Junina</h1>
@@ -192,9 +223,21 @@
         // =============================================
         // Carrinho
         // =============================================
+        const MAX_POR_ITEM = 20;
+        const MAX_TOTAL    = 50;
+
         function addToCart(produto, color) {
+            const totalQtyAtual = cart.reduce((a, i) => a + i.qty, 0);
+            if (totalQtyAtual >= MAX_TOTAL) {
+                alert('Ei, calma lá! 🌽 Máximo de ' + MAX_TOTAL + ' itens por pedido, uai!');
+                return;
+            }
             const existing = cart.find(i => i.id === produto.id);
             if (existing) {
+                if (existing.qty >= MAX_POR_ITEM) {
+                    alert('Ôxe! Já tem ' + MAX_POR_ITEM + ' unidades desse item. Chega por hoje! 😅');
+                    return;
+                }
                 existing.qty += 1;
             } else {
                 cart.push({ ...produto, qty: 1, color });
@@ -402,6 +445,98 @@
                 });
             }
         });
+
+        // =============================================
+        // LGPD Caipira
+        // =============================================
+        function aceitarLGPD() {
+            document.getElementById('lgpd-modal').style.display = 'none';
+            try { localStorage.setItem('lgpd_aceito', '1'); } catch(e) {}
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                if (localStorage.getItem('lgpd_aceito')) {
+                    document.getElementById('lgpd-modal').style.display = 'none';
+                }
+            } catch(e) {}
+        });
+
+        // =============================================
+        // Fogueira que segue o mouse
+        // =============================================
+        (function() {
+            const canvas = document.getElementById('fire-canvas');
+            const ctx    = canvas.getContext('2d');
+            let mx = -200, my = -200;
+            let particles = [];
+
+            function resize() {
+                canvas.width  = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+            document.addEventListener('touchmove', e => {
+                mx = e.touches[0].clientX;
+                my = e.touches[0].clientY;
+            }, { passive: true });
+
+            function spawnParticle() {
+                const spread = 10;
+                particles.push({
+                    x:    mx + (Math.random() - 0.5) * spread,
+                    y:    my,
+                    vx:   (Math.random() - 0.5) * 1.2,
+                    vy:   -(Math.random() * 3 + 2),
+                    life: 1,
+                    decay: Math.random() * 0.025 + 0.018,
+                    size: Math.random() * 14 + 6,
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x    += p.vx;
+                    p.y    += p.vy;
+                    p.vy   *= 0.98;
+                    p.life -= p.decay;
+                    p.size *= 0.97;
+                    if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+                    // cor: amarelo → laranja → vermelho → transparente
+                    const t = p.life;
+                    let r, g, b;
+                    if (t > 0.6) {
+                        r = 255; g = Math.round(200 + 55 * ((t - 0.6) / 0.4)); b = 50;
+                    } else if (t > 0.3) {
+                        r = 255; g = Math.round(80 + 120 * ((t - 0.3) / 0.3)); b = 0;
+                    } else {
+                        r = Math.round(180 + 75 * (t / 0.3)); g = 20; b = 0;
+                    }
+
+                    const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+                    grad.addColorStop(0,   `rgba(${r},${g},${b},${p.life})`);
+                    grad.addColorStop(0.5, `rgba(${r},${Math.max(0,g-40)},0,${p.life * 0.6})`);
+                    grad.addColorStop(1,   `rgba(${r},0,0,0)`);
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                }
+
+                // emite 3 partículas por frame enquanto mouse estiver na tela
+                if (mx > 0) { spawnParticle(); spawnParticle(); spawnParticle(); }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
     </script>
 </body>
 </html>
